@@ -4,22 +4,10 @@ const nodemailer=require('nodemailer')
 const csv = require('csv-parser');
 const fs = require('fs');
 const multer = require('multer');
-
-const csv_upload=(req,res)=>{
-    const image=req.file
-    const email=req.body.email
-   console.log(image)
-    const obj=new User_Data({image, email})
-    console.log(obj)
-    obj.save()
-    .then((data)=>{
-        console.log(data)
-        res.send("data insert successfully!")
-    })
-    .catch((err)=>{
-        console.log(err.message)
-    })
-}
+var parse = require('csv-parse');
+var dsv = require('d3-dsv');
+var fsPromises = require('fs').promises
+var download = require('download');
 
 
 //form open here.
@@ -30,105 +18,98 @@ const home=(req,res)=>{
 
 
 //image uploading here.
-const arr=[]
 const csvfile=  (req,res)=>{
-     
-    // console.log(`new upload = ${req.file.filename}\n`);
-    // console.log(req.file);
-    console.log("csv file upload success...")
-
-
-    const upload = multer({ dest: 'upload_url/' });
-//    fs.createReadStream(req.file.path)
-//    .pipe(csv())
-//    .on('data', (row) => {
-//     console.log(row)
-//     // console.log(row.Image_URL);
-// //     arr.push(row)
-// //    upload.single(row.Image_URL)
-// })
-// .on('end', () => {
-//     console.log('CSV file successfully processed');
-// });
-
-
-
-
-//upload csv file
-//csv file upload
-fs.readFile('./uploads/images.csv', async (err, data) => {
-    if (err) {
-      console.error(err)
-      return
-    }
-    console.log(await neatCsv(data))
-  })
-
-
-   
+    var tmp_path = req.file.path;
+    var target_path = 'csvStore/' + req.file.originalname;
+    var src = fs.createReadStream(tmp_path);
+    var dest = fs.createWriteStream(target_path);
+    src.on('end', function() { res.render('complete'); });
+    src.on('error', function(err) { res.render('error'); });
+    console.log(`new upload = ${req.file.filename}\n`);
     
 
-//     //use nodemailer
-//     var transporter = nodemailer.createTransport({
-//         service: 'gmail',
-//         secure: false,
-//         port: 25,
-//         auth: {
-//             user: "aijaj18@navgurukul.org",
-//             pass: "aijaj@#123"
-//             // pass: process.env.pass
-//         },
-//         tls: {
-//             rejectUnauthorized: false
-//         }
-//     });
-//     var mailOptions = {
-//         from: "aijaj18@navgurukul.org",
-//         to: "aijaj535@gmail.com",
-//         subject: "Welcome to Medium blog website to confirm your mail",
-//         text: "Hello message have you reach your destination "
-//     };
-//     if (transporter.sendMail(mailOptions)) {
-//         console.log("mail got successfully")
-//         // res.send("mail got successfully!")
-//         // res.sendFile(path.join(__dirname, '../' + '/views/otp.html'))
-//     }
-//     else {
-//         res.send("Couldn't send OTP.")
-//     }
-
-
-    // file uploading succkess
+    // nodemailer
+    let mailTransporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: 'aijaj18@navgurukul.org',
+            pass: process.env.Password
+        }
+    });
+      
+    let mailDetails = {
+        from: 'aijaj18@navgurukul.org',
+        to: req.body.email,
+        subject: 'Welcome to mail check',
+        text: 'Node.js testing mail for GeeksforGeeks'
+    };
+      
+    mailTransporter.sendMail(mailDetails, function(err, data) {
+        if(err) {
+            console.log(err.message)
+            console.log('Error Occurs');
+        } else {
+            console.log('Email sent successfully');
+        }
+    });
+    console.log("csv file upload success...")
+    res.send({message: "csv file upload success...", file: req.file})
 }
 
+//save file downlod file
+async function all(){
+    let data = dsv.csvParse(await fsPromises.readFile("./uploads/images.csv",  { encoding: "utf8" }))
 
-const download_url= async(req,res)=>{
-    //MAKE A FUNCTION AND CALL A FUNCTION
-    const upload = multer({ dest: 'upload_url/' });
-   await fs.createReadStream(req.file.path).pipe(csv()).on('data', (row) => {
-    // console.log(row)
-    upload.single(row.Image_URL), (err,data)=>{
-        if(err){
-            console.log(err.message)
-        }else{
-            console.log("data", data)
-        }
-    }
-    // console.log(row.Image_URL);
-    })
-    .on('end', () => {
-        console.log('CSV file successfully processed');
+    data.forEach(element => {
+        console.log(element)
+        download(element.Image_URL, "images",  {filename:  element.ID + ".jpg"})
     });
 }
 
+// all()
+
+
+// let request = require('request');
+// async function    download(url, dest) {
+//     const file = fs.createWriteStream(dest);
+//     await new Promise((resolve, reject) => {
+//       request({uri: url, gzip: true,}).pipe(file).on('finish', async () => {
+//         console.log(`The file is finished downloading.`);
+//         resolve();
+//     })
+//     .on('error', (error) => {
+//         reject(error);
+//     });
+// })
+//     .catch((error) => {
+//         console.log(`Something happened: ${error}`);
+//     });
+// }
+
+
+// (async (records)=>{
+//     console.log("aijajkhan", records)
+//     records.forEach(element => {
+//         download(element.Image_URL, 'images', {filename:  element.ID + ".jpg"});
+//     });
+//     console.log('done')
+// })(records); 
 
 
 
 
+//csv file read
+// const csvreadfile=()=>{
+//     var parser = parse({columns: true}, function (err, records) {
+//         // console.log(records);
 
-module.exports={
-    csv_upload,
+//     });
+//     fs.createReadStream('./uploads/images.csv').pipe(parser);
+// }
+
+// csvreadfile()
+
+module.exports={    
     home,
-    csvfile,
-    download_url
+    csvfile
 }
