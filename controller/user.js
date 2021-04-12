@@ -56,17 +56,22 @@ const csvfile=  (req,res)=>{
     res.send({message: "csv file upload success...", file: req.file})
 }
 
-//save file downlod file
-async function all(){
-    let data = dsv.csvParse(await fsPromises.readFile("./uploads/images.csv",  { encoding: "utf8" }))
 
-    data.forEach(element => {
-        console.log(element)
-        download(element.Image_URL, "images",  {filename:  element.ID + ".jpg"})
-    });
+
+//save file downlod file
+const download_url=(req,res)=>{
+    async function all(){
+        let data = dsv.csvParse(await fsPromises.readFile("./csvStore/images.csv",  { encoding: "utf8" }))
+    
+        data.forEach(element => {
+            console.log(element)
+            download(element.Image_URL, "uploads",  {filename:  element.ID + ".jpg"})
+        });
+    }
+    all()
 }
 
-// all()
+
 
 
 // let request = require('request');
@@ -98,7 +103,7 @@ async function all(){
 
 
 
-//csv file read
+// // csv file read
 // const csvreadfile=()=>{
 //     var parser = parse({columns: true}, function (err, records) {
 //         // console.log(records);
@@ -107,9 +112,10 @@ async function all(){
 //     fs.createReadStream('./uploads/images.csv').pipe(parser);
 // }
 
-// csvreadfile()
+// // csvreadfile()
 
 module.exports={    
     home,
-    csvfile
+    csvfile,
+    download_url
 }
