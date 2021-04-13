@@ -1,13 +1,13 @@
 const path= require('path')
-const User_Data=require('../model/user')
+const Image_url=require('../model/image_stored')
 const nodemailer=require('nodemailer')
-const csv = require('csv-parser');
 const fs = require('fs');
-const multer = require('multer');
-var parse = require('csv-parse');
 var dsv = require('d3-dsv');
 var fsPromises = require('fs').promises
 var download = require('download');
+// const csv = require('csv-parser');
+// const multer = require('multer');
+// var parse = require('csv-parse');
 
 
 //form open here.
@@ -16,20 +16,9 @@ const home=(req,res)=>{
     return res.sendFile(path.join(__dirname, '../' + 'view/index.html'))
 }
 
-
-//image uploading here.
-const csvfile=  (req,res)=>{
-    var tmp_path = req.file.path;
-    var target_path = 'csvStore/' + req.file.originalname;
-    var src = fs.createReadStream(tmp_path);
-    var dest = fs.createWriteStream(target_path);
-    src.on('end', function() { res.render('complete'); });
-    src.on('error', function(err) { res.render('error'); });
-    console.log(`new upload = ${req.file.filename}\n`);
-    
-
-    // nodemailer
-    let mailTransporter = nodemailer.createTransport({
+const mailerer=(req)=>{
+     //nodemailer
+     let mailTransporter = nodemailer.createTransport({   
         service: 'gmail',
         auth: {
             user: 'aijaj18@navgurukul.org',
@@ -41,7 +30,7 @@ const csvfile=  (req,res)=>{
         from: 'aijaj18@navgurukul.org',
         to: req.body.email,
         subject: 'Welcome to mail check',
-        text: 'Node.js testing mail for GeeksforGeeks'
+        text: 'user that the task is successful.'
     };
       
     mailTransporter.sendMail(mailDetails, function(err, data) {
@@ -52,67 +41,51 @@ const csvfile=  (req,res)=>{
             console.log('Email sent successfully');
         }
     });
-    console.log("csv file upload success...")
-    res.send({message: "csv file upload success...", file: req.file})
 }
 
+
+//image uploading here.
+const csvfile=  (req,res)=>{
+    var tmp_path = req.file.path;
+    var target_path = 'csvStore/' + req.file.originalname;
+    var src = fs.createReadStream(tmp_path);
+    var dest = fs.createWriteStream(target_path);
+    src.on('end', function() { res.render('complete'); });
+    src.on('error', function(err) { res.render('error'); });
+    
+    mailerer(req)
+    console.log("csv file upload success...")
+    res.send({message: "Images are being uploaded...", file: req.file})
+}
 
 
 //save file downlod file
 const download_url=(req,res)=>{
     async function all(){
-        let data = dsv.csvParse(await fsPromises.readFile("./csvStore/images.csv",  { encoding: "utf8" }))
-    
+        let data = dsv.csvParse(await fsPromises.readFile("./images.csv",  { encoding: "utf8" }))
+        console.log(data)
+        const all_data= await Image_url.find()
+        if(all_data){
+            console.log(all_data)
+            return res.send({message: "data allready exits", status: "success"})
+        }
+        await Image_url.insertMany(data) //image store in db
+        .then(()=>{
+            console.log("Data inserted")  // Success
+        })
+        .catch(function(error){
+            console.log(error)      // Failure
+        });
         data.forEach(element => {
-            console.log(element)
             download(element.Image_URL, "uploads",  {filename:  element.ID + ".jpg"})
         });
+
+        mailerer(req)
+        res.send("task is successfully!")
     }
     all()
 }
 
-
-
-
-// let request = require('request');
-// async function    download(url, dest) {
-//     const file = fs.createWriteStream(dest);
-//     await new Promise((resolve, reject) => {
-//       request({uri: url, gzip: true,}).pipe(file).on('finish', async () => {
-//         console.log(`The file is finished downloading.`);
-//         resolve();
-//     })
-//     .on('error', (error) => {
-//         reject(error);
-//     });
-// })
-//     .catch((error) => {
-//         console.log(`Something happened: ${error}`);
-//     });
-// }
-
-
-// (async (records)=>{
-//     console.log("aijajkhan", records)
-//     records.forEach(element => {
-//         download(element.Image_URL, 'images', {filename:  element.ID + ".jpg"});
-//     });
-//     console.log('done')
-// })(records); 
-
-
-
-
-// // csv file read
-// const csvreadfile=()=>{
-//     var parser = parse({columns: true}, function (err, records) {
-//         // console.log(records);
-
-//     });
-//     fs.createReadStream('./uploads/images.csv').pipe(parser);
-// }
-
-// // csvreadfile()
 
 module.exports={    
     home,
