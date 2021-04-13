@@ -21,13 +21,13 @@ const mailerer=(req)=>{
      let mailTransporter = nodemailer.createTransport({   
         service: 'gmail',
         auth: {
-            user: 'aijaj18@navgurukul.org',
+            user: process.env.Email,
             pass: process.env.Password
         }
     });
       
     let mailDetails = {
-        from: 'aijaj18@navgurukul.org',
+        from: process.env.Email,
         to: req.body.email,
         subject: 'Welcome to mail check',
         text: 'user that the task is successful.'
